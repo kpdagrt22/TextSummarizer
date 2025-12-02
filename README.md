@@ -28,7 +28,7 @@ Provide a clean, extensible codebase for experimenting with other summarization 
 Project Structure
 Below is a suggested, generic project structure. Rename or adjust folders if your implementation differs.
 
-bash
+```
 .
 ├── README.md
 ├── requirements.txt          # Python dependencies (transformers, datasets, torch, etc.)
@@ -67,6 +67,7 @@ bash
 └── examples/
     ├── sample_input.txt      # Example long text
     └── sample_output.txt     # Example generated summary
+```
 If your structure is different, share it and this section can be updated accordingly.
 
 Dataset: SAMSum
@@ -94,7 +95,7 @@ Other T5 / FLAN-T5 or LLaMA-based summarization models fine-tuned on SAMSum.​
 Model and tokenizer are loaded with transformers (e.g. AutoTokenizer and AutoModelForSeq2SeqLM or via the pipeline("summarization") interface).​
 
 Installation
-bash
+```
 # 1. Clone the repository
 git clone https://github.com/<your-username>/<your-repo-name>.git
 cd <your-repo-name>
@@ -106,7 +107,7 @@ source .venv/bin/activate  # Windows: .venv\Scripts\activate
 # 3. Install dependencies
 pip install -r requirements.txt
 Ensure you have a Hugging Face account and (optionally) a token configured if you use private models or Inference Endpoints.​
-
+```
 Usage
 1. Data Ingestion and Preprocessing
 bash
@@ -121,24 +122,25 @@ Cleaning text, handling long conversations, and truncation/padding for the model
 Splitting into train / validation sets.
 
 2. Training / Fine-Tuning
-bash
+```
 python -m src.train \
   --model_name_or_path google/pegasus-cnn_dailymail \
   --dataset_name knkarthick/samsum \
   --output_dir models/checkpoints/pegasus-samsum \
   --num_train_epochs 3 \
   --per_device_train_batch_size 4
+```
 Training can be implemented either with:
 
 Native PyTorch training loops, or
-
 transformers.Trainer for easier experimentation.
 
 3. Evaluation
-bash
+```
 python -m src.evaluate \
   --model_dir models/checkpoints/pegasus-samsum \
   --dataset_name knkarthick/samsum
+```
 Typical metrics:
 
 ROUGE-1, ROUGE-2, ROUGE-L to measure summary quality.
@@ -146,13 +148,14 @@ ROUGE-1, ROUGE-2, ROUGE-L to measure summary quality.
 4. Inference
 You can run summarization from the command line:
 
-bash
+```
 python -m src.inference \
   --model_dir models/checkpoints/pegasus-samsum \
   --text "Once upon a time in a kingdom nestled between vast forests..."
+```
 Or via an HTTP API (if api.py is implemented):
 
-bash
+```
 uvicorn src.api:app --reload
 
 # Then send a POST request to /summarize with JSON:
@@ -161,7 +164,7 @@ Example
 Input: A long story or a multi-turn chat (e.g. “lion and the king” story, or any conversation).
 
 Output: A concise, abstractive summary capturing the key events and intent of the original text, similar to online summarization tools but fully under your control and customizable through fine-tuning.​
-
+```
 Configuration
 Most hyperparameters and paths can be controlled via config/config.yaml (example fields):
 
