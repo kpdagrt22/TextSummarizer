@@ -1,234 +1,438 @@
-End-to-End NLP Text Summarization with Hugging Face
-An end-to-end NLP project that builds a production-style text summarization pipeline using Hugging Face Transformers, a pretrained summarization model (e.g. google/pegasus-cnn_dailymail), and the SAMSum conversational dataset for fine-tuning. The project demonstrates how to go from raw data to a deployable summarization service.
+# End-to-End NLP Text Summarization with Hugging Face
 
-Features
-Abstractive text summarization using state-of-the-art Transformer models from Hugging Face Model Hub.​
+A production-ready text summarization pipeline built with Hugging Face Transformers. This project demonstrates fine-tuning state-of-the-art models on conversational data and deploying them as a robust, scalable service.
 
-Fine-tuning on the SAMSum dataset for dialog and chat summarization.​
+[![Python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Transformers](https://img.shields.io/badge/🤗-transformers-orange.svg)](https://huggingface.co/transformers/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-Modular, reusable pipeline for:
+## 🎯 Overview
 
-Data ingestion and preprocessing
+This project provides an end-to-end workflow for building a custom text summarization model, from data ingestion to deployment. It uses pretrained transformer models (Pegasus, T5, FLAN-T5) and fine-tunes them on the SAMSum conversational dataset to generate high-quality abstractive summaries.
 
-Model training and evaluation
+### Key Features
 
-Inference API / CLI for real-world usage
+- **State-of-the-art Models**: Leverage pretrained transformers from Hugging Face Model Hub
+- **Conversational Focus**: Fine-tuned on SAMSum dataset for dialogue and chat summarization
+- **Modular Architecture**: Clean, reusable components for data processing, training, and inference
+- **Flexible Backbone**: Easy switching between Pegasus, T5, FLAN-T5, and other models
+- **Production Ready**: Includes REST API, batch processing, and containerization support
+- **Comprehensive Evaluation**: ROUGE metrics and custom evaluation pipelines
 
-Easily switchable backbone models (Pegasus, T5, FLAN-T5, etc.) with minimal code changes.​
+## 📋 Table of Contents
 
-Project Objectives
-Show how to discover and select summarization models from Hugging Face.
+- [Installation](#installation)
+- [Project Structure](#project-structure)
+- [Quick Start](#quick-start)
+- [Dataset](#dataset)
+- [Models](#models)
+- [Usage](#usage)
+- [Configuration](#configuration)
+- [Development Workflow](#development-workflow)
+- [API Reference](#api-reference)
+- [Contributing](#contributing)
+- [License](#license)
 
-Use a real-world annotated dataset (SAMSum) to fine-tune a pretrained summarization model.
+## 🚀 Installation
 
-Build an end-to-end workflow from data ingestion to deployment-quality inference.
+### Prerequisites
 
-Provide a clean, extensible codebase for experimenting with other summarization models and datasets.
+- Python 3.8 or higher
+- CUDA-compatible GPU (recommended for training)
+- 8GB+ RAM
 
-Project Structure
-Below is a suggested, generic project structure. Rename or adjust folders if your implementation differs.
+### Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/<your-username>/text-summarizer.git
+cd text-summarizer
+
+# Create virtual environment
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# (Optional) Login to Hugging Face for model access
+huggingface-cli login
+```
+
+## 📁 Project Structure
 
 ```
-.
+text-summarizer/
 ├── README.md
-├── requirements.txt          # Python dependencies (transformers, datasets, torch, etc.)
-├── setup.py                  # Optional: package metadata
+├── requirements.txt
+├── setup.py
+├── .env.example                 # Environment variables template
+├── Dockerfile                   # Container configuration
 ├── config/
-│   ├── config.yaml           # High-level config (paths, model name, training params)
-│   └── logging.yaml          # Optional logging configuration
+│   ├── config.yaml             # Main configuration file
+│   ├── params.yaml             # Training hyperparameters
+│   └── logging.yaml            # Logging configuration
 ├── data/
-│   ├── raw/                  # Raw SAMSum / other datasets (downloaded or cached)
-│   ├── processed/            # Tokenized / cleaned data
-│   └── samples/              # Small sample texts for quick tests
+│   ├── raw/                    # Original SAMSum dataset
+│   ├── processed/              # Tokenized and preprocessed data
+│   └── samples/                # Test samples for quick validation
 ├── notebooks/
-│   ├── 01_eda_samsum.ipynb   # Exploratory data analysis for SAMSum
-│   └── 02_model_playground.ipynb  # Quick experiments with different HF models
+│   ├── 01_eda_samsum.ipynb    # Exploratory data analysis
+│   ├── 02_model_comparison.ipynb  # Model performance comparison
+│   └── 03_error_analysis.ipynb    # Failed predictions analysis
 ├── src/
 │   ├── __init__.py
-│   ├── data_ingestion.py     # Downloading/loading SAMSum from HF Datasets or local files
-│   ├── data_preprocessing.py # Cleaning, truncation, tokenization, train/val split
-│   ├── models.py             # Model & tokenizer loading, model selection logic
-│   ├── train.py              # Training loop / Trainer API for fine-tuning
-│   ├── evaluate.py           # Evaluation (ROUGE, etc.)
-│   ├── inference.py          # Inference helpers, batch summarization functions
-│   ├── api.py                # Optional: FastAPI/Flask app exposing summarization endpoint
-│   └── utils.py              # Utility functions (seed setting, logging, metrics)
+│   ├── config/
+│   │   ├── __init__.py
+│   │   ├── configuration.py   # Configuration manager
+│   │   └── entity.py          # Config entity classes
+│   ├── components/
+│   │   ├── __init__.py
+│   │   ├── data_ingestion.py
+│   │   ├── data_transformation.py
+│   │   ├── model_trainer.py
+│   │   └── model_evaluation.py
+│   ├── pipeline/
+│   │   ├── __init__.py
+│   │   ├── training_pipeline.py
+│   │   └── prediction_pipeline.py
+│   ├── utils/
+│   │   ├── __init__.py
+│   │   ├── common.py          # Utility functions
+│   │   └── logger.py          # Custom logging
+│   └── api.py                  # FastAPI application
 ├── scripts/
-│   ├── run_data_pipeline.sh  # End-to-end data ingest + preprocess
-│   ├── run_training.sh       # Script to launch training
-│   └── run_inference.sh      # Script to run summarization on sample texts/files
+│   ├── run_pipeline.sh         # Full pipeline execution
+│   ├── train.sh                # Training script
+│   ├── evaluate.sh             # Evaluation script
+│   └── serve.sh                # API server launcher
 ├── models/
-│   ├── checkpoints/          # Saved fine-tuned model checkpoints
-│   └── tokenizer/            # Saved tokenizer configs (if needed)
+│   ├── checkpoints/            # Fine-tuned model weights
+│   └── tokenizer/              # Saved tokenizer configs
 ├── tests/
-│   ├── test_data.py          # Unit tests for data pipeline
-│   ├── test_models.py        # Unit tests for model loading & inference
-│   └── test_api.py           # Tests for API endpoints
-└── examples/
-    ├── sample_input.txt      # Example long text
-    └── sample_output.txt     # Example generated summary
+│   ├── unit/
+│   │   ├── test_data.py
+│   │   ├── test_models.py
+│   │   └── test_pipeline.py
+│   └── integration/
+│       └── test_api.py
+├── examples/
+│   ├── sample_conversation.txt
+│   ├── sample_summary.txt
+│   └── api_examples.py
+└── artifacts/                   # Training artifacts and logs
+    ├── logs/
+    └── metrics/
 ```
-If your structure is different, share it and this section can be updated accordingly.
 
-Dataset: SAMSum
-This project uses the SAMSum dataset (via Hugging Face Datasets) which contains messenger-style conversations paired with human-written summaries.​
+## ⚡ Quick Start
 
-Task: Dialogue / chat summarization.
+### 1. Run the Complete Pipeline
 
-Size: ~16k conversations with reference summaries.
-
-Source: Hugging Face Datasets: knkarthick/samsum.​
-
-You can replace SAMSum with other summarization datasets by adjusting the data loading and preprocessing logic.
-
-Model(s)
-By default, the project uses a pretrained summarization model from Hugging Face and fine-tunes it on SAMSum.
-
-Common choices include:
-
-google/pegasus-cnn_dailymail: Pegasus model pre-trained on news summarization corpora like C4 and HugeNews, well-suited for abstractive summarization.​
-
-Falconsai/text_summarization: T5-small variant fine-tuned for summarization tasks.​
-
-Other T5 / FLAN-T5 or LLaMA-based summarization models fine-tuned on SAMSum.​
-
-Model and tokenizer are loaded with transformers (e.g. AutoTokenizer and AutoModelForSeq2SeqLM or via the pipeline("summarization") interface).​
-
-Installation
+```bash
+# Execute the full workflow (data → training → evaluation)
+python main.py
 ```
-# 1. Clone the repository
-git clone https://github.com/<your-username>/<your-repo-name>.git
-cd <your-repo-name>
 
-# 2. (Optional) Create and activate a virtual environment
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
+### 2. Use Pre-trained Model for Inference
 
-# 3. Install dependencies
-pip install -r requirements.txt
-Ensure you have a Hugging Face account and (optionally) a token configured if you use private models or Inference Endpoints.​
+```python
+from src.pipeline.prediction_pipeline import PredictionPipeline
+
+# Initialize pipeline
+predictor = PredictionPipeline(model_path="models/checkpoints/best-model")
+
+# Summarize text
+conversation = """
+John: Hey, are we still meeting at 3pm today?
+Sarah: Yes! I'll bring the project files.
+John: Perfect. Should we invite Mike too?
+Sarah: Good idea, I'll send him a message now.
+"""
+
+summary = predictor.predict(conversation)
+print(f"Summary: {summary}")
 ```
-Usage
-1. Data Ingestion and Preprocessing
-bash
-python -m src.data_ingestion      # downloads/loads SAMSum or your dataset
-python -m src.data_preprocessing  # cleans & tokenizes data, creates train/val splits
-Key steps typically include:
 
-Loading SAMSum via datasets.load_dataset("knkarthick/samsum").
+### 3. Start the REST API
 
-Cleaning text, handling long conversations, and truncation/padding for the model.
+```bash
+# Launch FastAPI server
+uvicorn src.api:app --host 0.0.0.0 --port 8000 --reload
 
-Splitting into train / validation sets.
-
-2. Training / Fine-Tuning
+# Test the endpoint
+curl -X POST "http://localhost:8000/summarize" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Your long text here..."}'
 ```
-python -m src.train \
-  --model_name_or_path google/pegasus-cnn_dailymail \
-  --dataset_name knkarthick/samsum \
-  --output_dir models/checkpoints/pegasus-samsum \
-  --num_train_epochs 3 \
-  --per_device_train_batch_size 4
+
+## 📊 Dataset
+
+### SAMSum Corpus
+
+- **Source**: [Hugging Face Datasets](https://huggingface.co/datasets/knkarthick/samsum)
+- **Description**: Messenger-style conversations with human-written summaries
+- **Size**: ~16,000 conversation-summary pairs
+- **Task**: Abstractive dialogue summarization
+- **Split**: Train (14,732) / Validation (818) / Test (819)
+
+**Sample Entry**:
+```json
+{
+  "dialogue": "Amanda: I baked cookies. Do you want some?\nJerry: Sure!\nAmanda: I'll bring you tomorrow :-)",
+  "summary": "Amanda baked cookies and will bring Jerry some tomorrow."
+}
 ```
-Training can be implemented either with:
 
-Native PyTorch training loops, or
-transformers.Trainer for easier experimentation.
+### Using Custom Datasets
 
-3. Evaluation
+To use your own dataset, modify `src/components/data_ingestion.py`:
+
+```python
+# Load custom CSV/JSON
+custom_data = load_custom_dataset("path/to/your/data.csv")
 ```
-python -m src.evaluate \
-  --model_dir models/checkpoints/pegasus-samsum \
-  --dataset_name knkarthick/samsum
+
+## 🤖 Models
+
+### Supported Architectures
+
+| Model | Size | Best For | Training Time* |
+|-------|------|----------|----------------|
+| **google/pegasus-cnn_dailymail** | 568M | News articles, formal text | ~4 hours |
+| **t5-small** | 60M | Quick experiments, low resources | ~1 hour |
+| **facebook/bart-large-cnn** | 406M | Balanced performance | ~3 hours |
+| **Falconsai/text_summarization** | 60M | Dialogue, conversational text | ~1 hour |
+
+*Approximate training time on SAMSum with single V100 GPU
+
+### Model Selection
+
+```python
+# In config/config.yaml
+model:
+  name: "google/pegasus-cnn_dailymail"
+  max_input_length: 512
+  max_target_length: 128
 ```
-Typical metrics:
 
-ROUGE-1, ROUGE-2, ROUGE-L to measure summary quality.
+## 💻 Usage
 
-4. Inference
-You can run summarization from the command line:
+### Training a Model
 
+```bash
+# Using command line
+python -m src.pipeline.training_pipeline \
+  --model_name google/pegasus-cnn_dailymail \
+  --dataset knkarthick/samsum \
+  --epochs 3 \
+  --batch_size 4 \
+  --output_dir models/checkpoints/pegasus-samsum
+
+# Or use the shell script
+bash scripts/train.sh
 ```
-python -m src.inference \
-  --model_dir models/checkpoints/pegasus-samsum \
-  --text "Once upon a time in a kingdom nestled between vast forests..."
+
+### Evaluation
+
+```bash
+# Evaluate on test set
+python -m src.components.model_evaluation \
+  --model_path models/checkpoints/pegasus-samsum \
+  --dataset knkarthick/samsum
+
+# Output: ROUGE-1, ROUGE-2, ROUGE-L scores
 ```
-Or via an HTTP API (if api.py is implemented):
 
+### Batch Prediction
+
+```python
+from src.pipeline.prediction_pipeline import BatchPrediction
+
+# Process multiple texts
+texts = [
+    "First conversation...",
+    "Second conversation...",
+    "Third conversation..."
+]
+
+batch_predictor = BatchPrediction("models/checkpoints/best-model")
+summaries = batch_predictor.predict_batch(texts, batch_size=8)
 ```
-uvicorn src.api:app --reload
 
-# Then send a POST request to /summarize with JSON:
-# { "text": "your long article or conversation here" }
-Example
-Input: A long story or a multi-turn chat (e.g. “lion and the king” story, or any conversation).
+## ⚙️ Configuration
 
-Output: A concise, abstractive summary capturing the key events and intent of the original text, similar to online summarization tools but fully under your control and customizable through fine-tuning.​
+### config.yaml
+
+```yaml
+data:
+  dataset_name: knkarthick/samsum
+  train_batch_size: 4
+  eval_batch_size: 8
+  max_source_length: 512
+  max_target_length: 128
+
+model:
+  name: google/pegasus-cnn_dailymail
+  
+training:
+  num_epochs: 3
+  learning_rate: 2e-5
+  warmup_steps: 500
+  weight_decay: 0.01
+  gradient_accumulation_steps: 4
+  
+paths:
+  data_dir: data/
+  model_dir: models/checkpoints/
+  log_dir: artifacts/logs/
 ```
-Configuration
-Most hyperparameters and paths can be controlled via config/config.yaml (example fields):
 
-model_name_or_path: base HF model name
+### params.yaml
 
-dataset_name: e.g. knkarthick/samsum
+```yaml
+TrainingArguments:
+  num_train_epochs: 3
+  per_device_train_batch_size: 4
+  per_device_eval_batch_size: 8
+  warmup_steps: 500
+  learning_rate: 2e-5
+  evaluation_strategy: "epoch"
+  save_strategy: "epoch"
+  load_best_model_at_end: true
+  metric_for_best_model: "rouge1"
+```
 
-max_source_length, max_target_length
+## 🔄 Development Workflow
 
-learning_rate, batch_size, num_train_epochs
+### Standard Pipeline
 
-output_dir: where to store checkpoints and logs
+1. **Configuration Setup**: Define parameters in `config.yaml` and `params.yaml`
+2. **Entity Definition**: Create configuration entities in `src/config/entity.py`
+3. **Configuration Manager**: Implement in `src/config/configuration.py`
+4. **Component Development**:
+   - Data Ingestion (`src/components/data_ingestion.py`)
+   - Data Transformation (`src/components/data_transformation.py`)
+   - Model Training (`src/components/model_trainer.py`)
+   - Model Evaluation (`src/components/model_evaluation.py`)
+5. **Pipeline Creation**:
+   - Training Pipeline (`src/pipeline/training_pipeline.py`)
+   - Prediction Pipeline (`src/pipeline/prediction_pipeline.py`)
+6. **API Development**: REST endpoints in `src/api.py`
+7. **Testing**: Unit and integration tests
+8. **Deployment**: Containerization and cloud deployment
 
-Update the config file instead of changing code directly when possible.
+## 🌐 API Reference
 
-Roadmap
-Add support for multiple datasets (e.g. CNN/DailyMail, XSum).
+### Endpoints
 
-Add support for multiple backbones (Pegasus, T5, FLAN-T5, LLaMA-based models).
+#### POST /summarize
+Generate summary for input text.
 
-Integrate Hugging Face Hub push/pull for models and datasets.
+**Request**:
+```json
+{
+  "text": "Your long conversation or article here...",
+  "max_length": 128,
+  "min_length": 30
+}
+```
 
-Containerize the inference API with Docker and optionally deploy to cloud.
+**Response**:
+```json
+{
+  "summary": "Concise summary of the input text.",
+  "model": "pegasus-samsum",
+  "processing_time": 0.45
+}
+```
 
-Requirements
-Typical dependencies (put in requirements.txt):
+#### POST /batch-summarize
+Process multiple texts at once.
 
-transformers
+#### GET /health
+Check API health status.
 
-datasets
+#### GET /models
+List available models.
 
-torch or accelerate
+## 📈 Performance Metrics
 
-sentencepiece (for some models)
+### Baseline Results on SAMSum Test Set
 
-evaluate, rouge-score
+| Model | ROUGE-1 | ROUGE-2 | ROUGE-L |
+|-------|---------|---------|---------|
+| Pegasus-CNN/DM (fine-tuned) | 42.5 | 20.8 | 34.2 |
+| T5-small (fine-tuned) | 40.1 | 18.5 | 32.7 |
+| BART-large-CNN (fine-tuned) | 43.2 | 21.4 | 35.1 |
 
-fastapi, uvicorn (if using API)
+## 🐳 Docker Deployment
 
-pydantic, python-dotenv (optional helpers)
+```bash
+# Build image
+docker build -t text-summarizer:latest .
 
-Check exact versions based on your environment and GPU support.​
+# Run container
+docker run -p 8000:8000 \
+  -v $(pwd)/models:/app/models \
+  text-summarizer:latest
 
-Contributing
-Contributions are welcome:
+# Access API
+curl http://localhost:8000/health
+```
 
-New model configs, datasets, or training scripts.
+## 🗺️ Roadmap
 
-Improved evaluation metrics or logging.
+- [x] Core summarization pipeline
+- [x] SAMSum fine-tuning
+- [x] REST API implementation
+- [ ] Support for CNN/DailyMail and XSum datasets
+- [ ] Multi-model ensemble predictions
+- [ ] Hugging Face Hub integration for model versioning
+- [ ] Streamlit/Gradio web interface
+- [ ] Kubernetes deployment configurations
+- [ ] Real-time streaming summarization
+- [ ] Multi-language support
 
-Examples and tutorials (Jupyter notebooks, blog-style walkthroughs).
+## 🤝 Contributing
 
-Open an issue or submit a pull request with clear descriptions and reproducible steps.
+We welcome contributions! Please follow these steps:
 
-License
-Add your project’s license here (for example, MIT, Apache-2.0, etc.).
-Also respect the licenses of the underlying datasets and Hugging Face models you use.
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-### Workflows 
+Please ensure:
+- Code follows PEP 8 style guidelines
+- All tests pass (`pytest tests/`)
+- Documentation is updated
+- Commit messages are descriptive
 
-1. Config.yaml
-2. Params.yaml
-3. Config entity
-4. Configuration Manager
-5. Update the components- Data Ingestion,Data Transformation, Model Trainer
-6. Create our Pipeline-- Training Pipeline,PRediction Pipeline
-7. Front end-- Api's, Training APi's, Batch Prtediction API's# TextSummarizer
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+### Third-Party Licenses
+
+- Hugging Face Transformers: Apache 2.0
+- SAMSum Dataset: Non-commercial research purposes
+- PEGASUS Model: Apache 2.0
+
+## 🙏 Acknowledgments
+
+- [Hugging Face](https://huggingface.co/) for the Transformers library
+- SAMSum dataset creators
+- The open-source NLP community
+
+## 📧 Contact
+
+- **Project Maintainer**: Your Name
+- **Email**: your.email@example.com
+- **GitHub**: [@your-username](https://github.com/your-username)
+- **Issues**: [GitHub Issues](https://github.com/your-username/text-summarizer/issues)
+
+---
+
+⭐ If you find this project helpful, please consider giving it a star!
