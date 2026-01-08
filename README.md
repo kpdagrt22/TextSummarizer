@@ -428,9 +428,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📧 Contact
 
-- **Project Maintainer**: Your Name
-- **Email**: your.email@example.com
-- **GitHub**: [@your-username](https://github.com/your-username)
+- **Project Maintainer**: Prakash Kantumutchu
+- **Email**: k.prakashofficial@gmail.com
+- **GitHub**: [@your-username](https://github.com/kpdagrt22)
 - **Issues**: [GitHub Issues](https://github.com/your-username/text-summarizer/issues)
 
 ---
